@@ -1,6 +1,6 @@
 from datetime import datetime
 import requests
-from config2 import OPEN_WEATHER_TOKEN
+from config import OPEN_WEATHER_TOKEN
 # from pprint import pprint
 
 
@@ -49,7 +49,7 @@ def get_weather(city, token):
 Максимальная температура: {temp_max}°C
 Минимальная температура: {temp_min}°C
 Влажность: {humidity}%
-Давлеие: {pressure} мм.рт.ст.
+Давление: {pressure} мм.рт.ст.
 Скорость ветра: {wind_speed} м/c
 Восход: {sunrise_timestamp}
 Закат: {sunset_timestamp}
@@ -127,7 +127,7 @@ def get_forecast_weather(city, OPEN_WEATHER_TOKEN, count):
 Максимальная температура: {temp_max}°C
 Минимальная температура: {temp_min}°C
 Влажность: {humidity}%
-Давлеие: {pressure} мм.рт.ст.
+Давление: {pressure} мм.рт.ст.
 Скорость ветра: {wind_speed} м/c
                 """
                 datas.append(data1)
