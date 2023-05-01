@@ -1,0 +1,2 @@
+TOKEN_API = ""
+OPEN_WEATHER_TOKEN = ""
