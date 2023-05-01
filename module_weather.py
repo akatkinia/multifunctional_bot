@@ -39,7 +39,7 @@ def get_weather(city, token):
         if weather_main in code_to_emoji:
             wm = code_to_emoji[weather_main]
         else:
-            wm = "Посмотри в окно, не пойму, что это за погода!"
+            wm = "Что-то необычное. Лучше посмотри в окно"
 
         data1 = f"""
 <b>Погода на {cur_time}:</b>
