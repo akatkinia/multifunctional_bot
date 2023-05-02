@@ -22,6 +22,7 @@ class ProfileStatesGroup(StatesGroup):
     weather = State()
     current_weather = State()
     forecast_weather = State()
+    # состояние cat используется только для корректной работы callback обработчика cancel
     cat = State()
 
 ############## Клавиатуры ###################################################
@@ -31,7 +32,6 @@ def main_ikb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="Погода", callback_data=cb.new('weather'))],
         [InlineKeyboardButton(text="Посмотреть котика", callback_data=cb.new('cat'))]
 ])
-
     return ikb
 
 # Отмена для возврата в главное меню
@@ -53,7 +53,7 @@ def weather_ikb() -> InlineKeyboardMarkup:
 # Котики
 def cat_ikb() -> InlineKeyboardMarkup:
     ikb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Фото котика", callback_data=cb.new('cat'))],
+        [InlineKeyboardButton(text="Фото котика", callback_data=cb.new('cat_photo'))],
         [InlineKeyboardButton(text="Вернуться в главное меню", callback_data=cb.new('cancel'))]
 ])
     return ikb
@@ -61,25 +61,26 @@ def cat_ikb() -> InlineKeyboardMarkup:
 
 
 ############## Обработчики ##################################################
-# Обработка команды 'start'
-@dp.message_handler(commands=['start'], state='*')
+# Обработка команд 'start' и cancel
+@dp.message_handler(commands=['start', 'cancel'], state='*')
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
     await message.answer(text="Добро пожаловать!",
                          reply_markup=main_ikb())
-
-# Обработка команды 'cancel'
-@dp.message_handler(commands=['cancel'], state='*')
-async def cmd_start(message: types.Message, state: FSMContext):
-    await state.finish()
-    await message.answer(text="Добро пожаловать!",
-                         reply_markup=main_ikb())
+    await message.delete()
 
 # Обработка callback 'cancel' для всех состояний
 @dp.callback_query_handler(cb.filter(command='cancel'), state='*')
 async def cb_cat_cancel(callback: types.CallbackQuery, state: FSMContext):
-    await state.finish()
-    await callback.message.answer(text="Добро пожаловать!", reply_markup=main_ikb())
+    # если состояние FSM является котиком, то вернуть в виде ответа, в остальных случаях редактированием текста
+    hello_text = "Добро пожаловать!"
+    if await state.get_state() == "ProfileStatesGroup:cat":
+        await state.finish()
+        await callback.message.answer(text=hello_text, reply_markup=main_ikb())
+        await callback.message.delete()
+    else:
+        await state.finish()
+        await callback.message.edit_text(text=hello_text, reply_markup=main_ikb())
 
 # Погода
 @dp.callback_query_handler(cb.filter(command='weather'), state='*')
@@ -102,6 +103,7 @@ async def cb_current_weather(callback: types.CallbackQuery, callback_data: dict,
 async def current_weather(message: types.Message):
     await message.answer(text=get_weather(message.text, OPEN_WEATHER_TOKEN), reply_markup=cancel_ikb(), parse_mode='html')
 
+
 # Вызов модуля прогноза погоды
 @dp.message_handler(state=ProfileStatesGroup.forecast_weather)
 async def forecast_weather(message: types.Message):
@@ -118,6 +120,8 @@ async def forecast_weather(message: types.Message):
     else:
         city = message.text
     
+    print(city)
+    print(hours_count)
     text = get_forecast_weather(city, OPEN_WEATHER_TOKEN, count=hours_count)
     MAX_MESSAGE_LENGTH = 4096
     chunks = [text[i:i+MAX_MESSAGE_LENGTH] for i in range(0, len(text), MAX_MESSAGE_LENGTH)]
@@ -128,13 +132,22 @@ async def forecast_weather(message: types.Message):
             continue
 
 # Котики
-@dp.callback_query_handler(cb.filter(command='cat'), state='*')
+# @dp.callback_query_handler(cb.filter(command='cat'), state='*')
+@dp.callback_query_handler(cb.filter(), state='*')
 async def cb_cat(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
-    await ProfileStatesGroup.cat.set()
-    await callback.answer(text="Вскоре на экране появится очаровательный котик")
-    await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
-    await bot.send_photo(chat_id=callback.message.chat.id, photo=InputFile.from_url(await get_cat_photo()), reply_markup=cat_ikb())
-
+    popup_text = "Вскоре на экране появится очаровательный котик"
+    if callback.data == "ikb:cat":
+        await ProfileStatesGroup.cat.set()
+        await callback.answer(text=popup_text)
+        await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
+        await bot.send_photo(chat_id=callback.message.chat.id, photo=InputFile.from_url(get_cat_photo()), reply_markup=cat_ikb())
+    elif callback.data == "ikb:cat_photo":
+        await ProfileStatesGroup.cat.set()
+        # print(await state.get_state())
+        await callback.answer(text=popup_text)
+        await callback.message.edit_media(types.InputMedia(media=InputFile.from_url(get_cat_photo()),
+                                                           type='photo'),
+                                                           reply_markup=cat_ikb())
 #############################################################################
 
 
