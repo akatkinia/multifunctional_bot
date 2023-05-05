@@ -10,6 +10,7 @@ from aiogram.utils.exceptions import MessageIsTooLong
 
 from module_weather import get_weather, get_forecast_weather
 from module_cat import get_cat_photo
+from module_currency import get_course, get_valutes
 from config import TOKEN_API, OPEN_WEATHER_TOKEN
 
 
@@ -25,36 +26,49 @@ class ProfileStatesGroup(StatesGroup):
     # состояние cat используется только для корректной работы callback обработчика cancel
     cat = State()
 
+    currency = State()
+    currency_help = State()
+    currency_current = State()
+
 ############## Клавиатуры ###################################################
 # Главное меню
 def main_ikb() -> InlineKeyboardMarkup:
     ikb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Погода", callback_data=cb.new('weather'))],
-        [InlineKeyboardButton(text="Посмотреть котика", callback_data=cb.new('cat'))]
+        [InlineKeyboardButton(text="Погода ☀️", callback_data=cb.new('weather'))],
+        [InlineKeyboardButton(text="Курсы валют 💰", callback_data=cb.new('currency'))],
+        [InlineKeyboardButton(text="Посмотреть котика 😺", callback_data=cb.new('cat'))]
 ])
     return ikb
 
 # Отмена для возврата в главное меню
 def cancel_ikb() -> InlineKeyboardMarkup:
     ikb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Вернуться в главное меню", callback_data=cb.new('cancel'))]
+        [InlineKeyboardButton(text="Вернуться в главное меню 📝", callback_data=cb.new('cancel'))]
 ])
     return ikb
 
 # Погода
 def weather_ikb() -> InlineKeyboardMarkup:
     ikb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Текущая погода", callback_data=cb.new('weather_current')),
-         InlineKeyboardButton(text="С интервалом в три часа", callback_data=cb.new('forecast_weather'))],
-        [InlineKeyboardButton(text="Вернуться в главное меню", callback_data=cb.new('cancel'))]
+        [InlineKeyboardButton(text="Текущая погода ☀️", callback_data=cb.new('weather_current')),
+         InlineKeyboardButton(text="Интервал в 3 часа 🌤", callback_data=cb.new('forecast_weather'))],
+        [InlineKeyboardButton(text="Вернуться в главное меню 📝", callback_data=cb.new('cancel'))]
 ])
     return ikb
 
 # Котики
 def cat_ikb() -> InlineKeyboardMarkup:
     ikb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Фото котика", callback_data=cb.new('cat_photo'))],
-        [InlineKeyboardButton(text="Вернуться в главное меню", callback_data=cb.new('cancel'))]
+        [InlineKeyboardButton(text="Фото котика 😼", callback_data=cb.new('cat_photo'))],
+        [InlineKeyboardButton(text="Вернуться в главное меню 📝", callback_data=cb.new('cancel'))]
+])
+    return ikb
+
+# Курсы валют
+def currency_ikb() -> InlineKeyboardMarkup:
+    ikb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Справка ❓", callback_data=cb.new('currency_help'))],
+        [InlineKeyboardButton(text="Вернуться в главное меню 📝", callback_data=cb.new('cancel'))]
 ])
     return ikb
 #############################################################################
@@ -65,7 +79,7 @@ def cat_ikb() -> InlineKeyboardMarkup:
 @dp.message_handler(commands=['start', 'cancel'], state='*')
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
-    await message.answer(text="Добро пожаловать!",
+    await message.answer(text=f"Добро пожаловать, {message.from_user.full_name}!",
                          reply_markup=main_ikb())
     await message.delete()
 
@@ -81,6 +95,25 @@ async def cb_cat_cancel(callback: types.CallbackQuery, state: FSMContext):
     else:
         await state.finish()
         await callback.message.edit_text(text=hello_text, reply_markup=main_ikb())
+
+# Курсы валют
+@dp.callback_query_handler(cb.filter(command='currency'), state='*')
+async def cb_currency(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    await ProfileStatesGroup.currency.set()
+    await callback.message.edit_text("Напишите мнемокод валюты, курс которой хотите узнать. Для получения списка мнемокодов, вызовите справку", reply_markup=currency_ikb())
+
+# Справка курса валют
+@dp.callback_query_handler(cb.filter(), state=ProfileStatesGroup.currency)
+async def cb_currency(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['command'] == 'currency_help':
+        # await ProfileStatesGroup.current_weather.set()
+        await callback.message.answer(text=get_valutes(), reply_markup=cancel_ikb(), parse_mode='html')
+        # await callback.message.delete()
+
+# Вызов курса валют
+@dp.message_handler(state=ProfileStatesGroup.currency)
+async def currency(message: types.Message):
+    await message.answer(text=get_course(message.text), reply_markup=currency_ikb(), parse_mode='html')
 
 # Погода
 @dp.callback_query_handler(cb.filter(command='weather'), state='*')
@@ -120,8 +153,6 @@ async def forecast_weather(message: types.Message):
     else:
         city = message.text
     
-    print(city)
-    print(hours_count)
     text = get_forecast_weather(city, OPEN_WEATHER_TOKEN, count=hours_count)
     MAX_MESSAGE_LENGTH = 4096
     chunks = [text[i:i+MAX_MESSAGE_LENGTH] for i in range(0, len(text), MAX_MESSAGE_LENGTH)]
@@ -132,7 +163,6 @@ async def forecast_weather(message: types.Message):
             continue
 
 # Котики
-# @dp.callback_query_handler(cb.filter(command='cat'), state='*')
 @dp.callback_query_handler(cb.filter(), state='*')
 async def cb_cat(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     popup_text = "Вскоре на экране появится очаровательный котик"
@@ -148,6 +178,8 @@ async def cb_cat(callback: types.CallbackQuery, callback_data: dict, state: FSMC
         await callback.message.edit_media(types.InputMedia(media=InputFile.from_url(get_cat_photo()),
                                                            type='photo'),
                                                            reply_markup=cat_ikb())
+
+
 #############################################################################
 
 
