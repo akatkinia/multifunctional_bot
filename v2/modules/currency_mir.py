@@ -6,7 +6,7 @@ from datetime import datetime
 import io
 import requests
 from bs4 import BeautifulSoup as bs
-
+import matplotlib.dates as mdates
 
 URL = "https://mironline.ru/upload/currency%20rate/FX_rate_Mir.pdf"
 FILE_PATH = "MIR.pdf"
@@ -108,49 +108,69 @@ def draw_currency_chart_mir(main, valute, start_date, end_date):
     rates_rub = []
 
     for data in main:
-        date = datetime.strptime(data["Date"], "%d.%m.%Y")
+        # time = data["Time"]
+        # print(time)
+        # date = datetime.strptime(data["Date"], "%d.%m.%Y")
+
+        date_str = data["Date"] + " " + data["Time"]  # объединяем дату и время в одну строку
+        date = datetime.strptime(date_str, "%d.%m.%Y %H:%M")  # преобразуем строку в объект datetime
         if valute == data["Valute"] and start_date <= date <= end_date:
-            dates.append(data["Date"])
+            dates.append(date)
             currency = float(data["Currency"].replace(",", "."))
             currency_rub = 1 / float(data["Currency"].replace(",", "."))
 
-            rates.append(float(data["Currency"].replace(",", ".")))
+            rates.append(currency)
             rates_rub.append(currency_rub)
 
     if len(dates) > 0:
         fig1, ax1 = plt.subplots()
-        plt.plot(list(reversed(dates)), list(reversed(rates_rub)))
-        plt.xlabel("Date")
-        plt.ylabel(f"Рублей")
+        plt.plot(list(reversed(dates)), list(reversed(rates_rub)), marker='o')
+        plt.xlabel("Дата")
+        plt.ylabel(valute)
         plt.title(f"Курс рубля к {valute}")
         plt.xticks(rotation=45)
         plt.grid(True)
-        # plt.show()
 
-        # Сохраняем первый график в байтовый объект
+        # Форматирование даты и времени на шкале x
+        date_formatter = mdates.DateFormatter("%d.%m.%Y")
+        ax1.xaxis.set_major_formatter(date_formatter)
+
+        for i in range(len(dates)):
+            value = round(rates_rub[i], 4)
+            ax1.annotate(str(value), xy=(dates[i], rates_rub[i]), xytext=(0, 5), textcoords='offset points')
+
+        plt.show()
+
         bytes_io1 = io.BytesIO()
         plt.savefig(bytes_io1, format='png', dpi=300)
         bytes_io1.seek(0)
         fig1_bytes = bytes_io1.getvalue()
 
-        plt.close(fig1)  # Закрываем первый график
+        plt.close(fig1)
 
         fig2, ax2 = plt.subplots()
-        plt.plot(list(reversed(dates)), list(reversed(rates)))
-        plt.xlabel("Date")
-        plt.ylabel(valute)
+        plt.plot(list(reversed(dates)), list(reversed(rates)), marker='o')
+        plt.xlabel("Дата")
+        plt.ylabel("Рублей")
         plt.title(f"Курс {valute} к рублю")
         plt.xticks(rotation=45)
         plt.grid(True)
-        # plt.show()
 
-        # Сохраняем второй график в байтовый объект
+        # Форматирование даты и времени на шкале x
+        ax2.xaxis.set_major_formatter(date_formatter)
+
+        for i in range(len(dates)):
+            value = round(rates[i], 4)
+            ax2.annotate(str(value), xy=(dates[i], rates[i]), xytext=(0, 5), textcoords='offset points')
+
+        plt.show()
+
         bytes_io2 = io.BytesIO()
         plt.savefig(bytes_io2, format='png', dpi=300)
         bytes_io2.seek(0)
         fig2_bytes = bytes_io2.getvalue()
 
-        plt.close(fig2)  # Закрываем второй график
+        plt.close(fig2)
 
         return fig1_bytes, fig2_bytes
     else:
@@ -162,13 +182,13 @@ if __name__ == "__main__":
     # получить список курсов по всем валютам и по всем диапазонам (основная функция (main)) - не нужно её принтить
     full_currencies = get_currencies_mir()
     # получить список доступных валют и дат
-    # all_valutes = get_valutes_mir(main=full_currencies)
-    all_valutes = get_valutes_mir()
+    all_valutes = get_valutes_mir(main=full_currencies)
+    # all_valutes = get_valutes_mir()
     # получить по конкретной валюте (курс рубля к валюте) за определённую дату
     # получить по конкретной валюте (курс валюты к рублю) за определённую дату
-    course = get_course_on_date_mir(main=full_currencies, valute="Кубинский песо", date="16.06.2023")
+    # course = get_course_on_date_mir(main=full_currencies, valute="Кубинский песо", date="16.06.2023")
     # получить график за указанный диапазон (2 графика в PNG, сохранённом в байтовом представлении - рубль к валюте и валюта к рублю)
-    charts = draw_currency_chart_mir(main=full_currencies, valute="Казахстанский тенге", start_date="24.02.2022", end_date="16.06.2023")
+    charts = draw_currency_chart_mir(main=full_currencies, valute="Казахстанский тенге", start_date="01.01.2022", end_date="05.07.2023")
     # print(charts[0])
     # print(charts[1])
 
