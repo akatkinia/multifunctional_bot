@@ -16,6 +16,24 @@ def get_currencies_mir():
     # Создаем объект запроса с отключенной проверкой сертификата
     req = urllib.request.Request(URL, method="GET")
     req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0")
+    opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl._create_unverified_context()import urllib.request
+import ssl
+import pdfplumber
+import matplotlib.pyplot as plt
+from datetime import datetime
+import io
+import requests
+from bs4 import BeautifulSoup as bs
+import matplotlib.dates as mdates
+
+URL = "https://mironline.ru/upload/currency%20rate/FX_rate_Mir.pdf"
+FILE_PATH = "MIR.pdf"
+COMBINED_TABLE = []
+
+def get_currencies_mir():
+    # Создаем объект запроса с отключенной проверкой сертификата
+    req = urllib.request.Request(URL, method="GET")
+    req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0")
     opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl._create_unverified_context()))
 
     # Отправляем запрос и скачиваем файл в память
@@ -84,19 +102,46 @@ def get_valutes_mir(main):
 
     return result
 
+
+def get_course_today_mir(main, valute):
+    valute = valute.capitalize()
+    results = []
+
+    for index, data in enumerate(main):
+        current_date = full_currencies[index]["Date"] if index < len(full_currencies) else None
+        if valute == data["Valute"] and current_date == data["Date"]:
+            currency = float(data["Currency"].replace(",", "."))
+            time = data["Time"]
+            result = f"""Сегодняшний курс равен курсу за {current_date} {time}
+RUB к {valute}: {round(1/currency, 4)}
+{valute} к RUB: {currency}
+"""
+            results.append(result)
+            break
+
+    if results:
+        return "\n".join(results)
+
+
 def get_course_on_date_mir(main, valute, date):
-    valute = valute
+    valute = valute.capitalize()
     date = date
+
+    results = []
 
     for data in main:
         if valute == data["Valute"] and date == data["Date"]:
             currency = float(data["Currency"].replace(",", "."))
             time = data["Time"]
-            return f"""Курс за {date} {time}
+            result = f"""Курс за {date} {time}
 RUB к {valute}: {round(1/currency, 4)}
 {valute} к RUB: {currency}
 """
-    return f"За выбранную дату нет данных, либо валюта указана некорректно."
+            results.append(result)
+    if results:
+        return "\n".join(results)  # Возвращаем все результаты, объединенные символом новой строки
+    else:
+        return f"За выбранную дату нет данных, либо валюта указана некорректно. Наименования валют в справке. Если валюта указана верно, попробуйте другую дату - возможно за сегодня курс не менялся"
 
 
 def draw_currency_chart_mir(main, valute, start_date, end_date):
@@ -184,11 +229,15 @@ if __name__ == "__main__":
     # получить список доступных валют и дат
     all_valutes = get_valutes_mir(main=full_currencies)
     # all_valutes = get_valutes_mir()
-    # получить по конкретной валюте (курс рубля к валюте) за определённую дату
-    # получить по конкретной валюте (курс валюты к рублю) за определённую дату
-    # course = get_course_on_date_mir(main=full_currencies, valute="Кубинский песо", date="16.06.2023")
+    # получить по конкретной валюте за сегодня
+    today_course = get_course_today_mir(main=full_currencies, valute="казахстанский тенге")
+    print(today_course)
+    # получить по конкретной валюте за определённую дату
+    course = get_course_on_date_mir(main=full_currencies, valute="казахстанский тенге", date="20.06.2023")
+    # print(course)
+
     # получить график за указанный диапазон (2 графика в PNG, сохранённом в байтовом представлении - рубль к валюте и валюта к рублю)
-    charts = draw_currency_chart_mir(main=full_currencies, valute="Казахстанский тенге", start_date="01.01.2022", end_date="05.07.2023")
+    # charts = draw_currency_chart_mir(main=full_currencies, valute="Казахстанский тенге", start_date="01.01.2022", end_date="05.07.2023")
     # print(charts[0])
     # print(charts[1])
 
