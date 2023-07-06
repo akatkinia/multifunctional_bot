@@ -62,8 +62,9 @@ def get_weather(city, token):
     except Exception as ex:
         return f"""
 ⚠️ Города с именем <b>{city}</b> не найдено ⚠️
-{ex.__class__.__name__}: {ex}
 """
+# в return выше можно добавить для отображение ошибки для отладки
+# {ex.__class__.__name__}: {ex}
 
 def get_forecast_weather(city, OPEN_WEATHER_TOKEN, count):
     datas = []
@@ -111,5 +112,7 @@ def get_forecast_weather(city, OPEN_WEATHER_TOKEN, count):
     except Exception as ex:
         return f"""
 ⚠️ Города с именем <b>{city}</b> не найдено ⚠️
-{ex.__class__.__name__}: {ex}
 """
+    
+# в return выше можно добавить для отображение ошибки для отладки
+# {ex.__class__.__name__}: {ex}

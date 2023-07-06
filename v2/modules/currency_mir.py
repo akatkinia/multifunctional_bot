@@ -7,28 +7,12 @@ import io
 import requests
 from bs4 import BeautifulSoup as bs
 import matplotlib.dates as mdates
+from aiogram.utils.exceptions import MessageTextIsEmpty
 
 URL = "https://mironline.ru/upload/currency%20rate/FX_rate_Mir.pdf"
 FILE_PATH = "MIR.pdf"
 COMBINED_TABLE = []
 
-def get_currencies_mir():
-    # Создаем объект запроса с отключенной проверкой сертификата
-    req = urllib.request.Request(URL, method="GET")
-    req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0")
-    opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl._create_unverified_context()import urllib.request
-import ssl
-import pdfplumber
-import matplotlib.pyplot as plt
-from datetime import datetime
-import io
-import requests
-from bs4 import BeautifulSoup as bs
-import matplotlib.dates as mdates
-
-URL = "https://mironline.ru/upload/currency%20rate/FX_rate_Mir.pdf"
-FILE_PATH = "MIR.pdf"
-COMBINED_TABLE = []
 
 def get_currencies_mir():
     # Создаем объект запроса с отключенной проверкой сертификата
@@ -98,7 +82,7 @@ def get_valutes_mir(main):
     last_date = main[-1]["Date"]
 
     # result = f"<b>Доступные валюты:</b>\n{valutes_text}"
-    result = f"<b>Доступные валюты:</b>\n{valutes_text}\n\n<b>Диапазон дат, за которые имеются данные:</b>\n{first_date} - {last_date}"
+    result = f"<b>Доступные валюты:</b>\n{valutes_text}\n\n<b>Диапазон дат, за которые имеются данные:</b>\n{last_date} - {first_date}"
 
     return result
 
@@ -108,11 +92,12 @@ def get_course_today_mir(main, valute):
     results = []
 
     for index, data in enumerate(main):
-        current_date = full_currencies[index]["Date"] if index < len(full_currencies) else None
+        current_date = main[index]["Date"] if index < len(main) else None
         if valute == data["Valute"] and current_date == data["Date"]:
             currency = float(data["Currency"].replace(",", "."))
             time = data["Time"]
-            result = f"""Сегодняшний курс равен курсу за {current_date} {time}
+            result = f"""<b>💰 Сегодняшний курс равен курсу за {current_date} {time}</b>
+
 RUB к {valute}: {round(1/currency, 4)}
 {valute} к RUB: {currency}
 """
@@ -121,6 +106,8 @@ RUB к {valute}: {round(1/currency, 4)}
 
     if results:
         return "\n".join(results)
+    else:
+        return "Некоррктно указана валюта. Воспользуйтесь справкой и попробуйте снова"
 
 
 def get_course_on_date_mir(main, valute, date):
@@ -133,113 +120,115 @@ def get_course_on_date_mir(main, valute, date):
         if valute == data["Valute"] and date == data["Date"]:
             currency = float(data["Currency"].replace(",", "."))
             time = data["Time"]
-            result = f"""Курс за {date} {time}
+            result = f"""<b>💰 Курс за {date} {time}</b>
+
 RUB к {valute}: {round(1/currency, 4)}
 {valute} к RUB: {currency}
 """
             results.append(result)
+
     if results:
         return "\n".join(results)  # Возвращаем все результаты, объединенные символом новой строки
     else:
-        return f"За выбранную дату нет данных, либо валюта указана некорректно. Наименования валют в справке. Если валюта указана верно, попробуйте другую дату - возможно за сегодня курс не менялся"
+        return f"За выбранную дату нет данных, либо валюта указана некорректно. Наименования валют перечислены в справке. Если же валюта указана верно, попробуйте другую дату — возможно за сегодня курс не менялся"
 
 
 def draw_currency_chart_mir(main, valute, start_date, end_date):
-    start_date = datetime.strptime(start_date, "%d.%m.%Y")
-    end_date = datetime.strptime(end_date, "%d.%m.%Y")
+    try:
+        start_date = datetime.strptime(start_date, "%d.%m.%Y")
+        end_date = datetime.strptime(end_date, "%d.%m.%Y")
 
-    dates = []
-    rates = []
-    rates_rub = []
+        dates = []
+        rates = []
+        rates_rub = []
 
-    for data in main:
-        # time = data["Time"]
-        # print(time)
-        # date = datetime.strptime(data["Date"], "%d.%m.%Y")
+        for data in main:
+            date_str = data["Date"] + " " + data["Time"]  # объединяем дату и время в одну строку
+            date = datetime.strptime(date_str, "%d.%m.%Y %H:%M")  # преобразуем строку в объект datetime
+            if valute == data["Valute"] and start_date <= date <= end_date:
+                dates.append(date)
+                currency = float(data["Currency"].replace(",", "."))
+                currency_rub = 1 / float(data["Currency"].replace(",", "."))
 
-        date_str = data["Date"] + " " + data["Time"]  # объединяем дату и время в одну строку
-        date = datetime.strptime(date_str, "%d.%m.%Y %H:%M")  # преобразуем строку в объект datetime
-        if valute == data["Valute"] and start_date <= date <= end_date:
-            dates.append(date)
-            currency = float(data["Currency"].replace(",", "."))
-            currency_rub = 1 / float(data["Currency"].replace(",", "."))
+                rates.append(currency)
+                rates_rub.append(currency_rub)
 
-            rates.append(currency)
-            rates_rub.append(currency_rub)
+        if len(dates) > 0:
+            fig1, ax1 = plt.subplots()
+            plt.plot(list(reversed(dates)), list(reversed(rates_rub)), marker='o')
+            plt.xlabel("Дата")
+            plt.ylabel(valute)
+            plt.title(f"Курс рубля к {valute}")
+            plt.xticks(rotation=45)
+            plt.grid(True)
 
-    if len(dates) > 0:
-        fig1, ax1 = plt.subplots()
-        plt.plot(list(reversed(dates)), list(reversed(rates_rub)), marker='o')
-        plt.xlabel("Дата")
-        plt.ylabel(valute)
-        plt.title(f"Курс рубля к {valute}")
-        plt.xticks(rotation=45)
-        plt.grid(True)
+            # Форматирование даты и времени на шкале x
+            date_formatter = mdates.DateFormatter("%d.%m.%Y")
+            ax1.xaxis.set_major_formatter(date_formatter)
 
-        # Форматирование даты и времени на шкале x
-        date_formatter = mdates.DateFormatter("%d.%m.%Y")
-        ax1.xaxis.set_major_formatter(date_formatter)
+            for i in range(len(dates)):
+                value = round(rates_rub[i], 4)
+                ax1.annotate(str(value), xy=(dates[i], rates_rub[i]), xytext=(0, 5), textcoords='offset points')
 
-        for i in range(len(dates)):
-            value = round(rates_rub[i], 4)
-            ax1.annotate(str(value), xy=(dates[i], rates_rub[i]), xytext=(0, 5), textcoords='offset points')
+            # plt.show()
 
-        plt.show()
+            bytes_io1 = io.BytesIO()
+            plt.savefig(bytes_io1, format='png', dpi=300)
+            bytes_io1.seek(0)
+            fig1_bytes = bytes_io1.getvalue()
 
-        bytes_io1 = io.BytesIO()
-        plt.savefig(bytes_io1, format='png', dpi=300)
-        bytes_io1.seek(0)
-        fig1_bytes = bytes_io1.getvalue()
+            plt.close(fig1)
 
-        plt.close(fig1)
+            fig2, ax2 = plt.subplots()
+            plt.plot(list(reversed(dates)), list(reversed(rates)), marker='o')
+            plt.xlabel("Дата")
+            plt.ylabel("Рублей")
+            plt.title(f"Курс {valute} к рублю")
+            plt.xticks(rotation=45)
+            plt.grid(True)
 
-        fig2, ax2 = plt.subplots()
-        plt.plot(list(reversed(dates)), list(reversed(rates)), marker='o')
-        plt.xlabel("Дата")
-        plt.ylabel("Рублей")
-        plt.title(f"Курс {valute} к рублю")
-        plt.xticks(rotation=45)
-        plt.grid(True)
+            # Форматирование даты и времени на шкале x
+            ax2.xaxis.set_major_formatter(date_formatter)
 
-        # Форматирование даты и времени на шкале x
-        ax2.xaxis.set_major_formatter(date_formatter)
+            for i in range(len(dates)):
+                value = round(rates[i], 4)
+                ax2.annotate(str(value), xy=(dates[i], rates[i]), xytext=(0, 5), textcoords='offset points')
 
-        for i in range(len(dates)):
-            value = round(rates[i], 4)
-            ax2.annotate(str(value), xy=(dates[i], rates[i]), xytext=(0, 5), textcoords='offset points')
+            # plt.show()
 
-        plt.show()
+            bytes_io2 = io.BytesIO()
+            plt.savefig(bytes_io2, format='png', dpi=300)
+            bytes_io2.seek(0)
+            fig2_bytes = bytes_io2.getvalue()
 
-        bytes_io2 = io.BytesIO()
-        plt.savefig(bytes_io2, format='png', dpi=300)
-        bytes_io2.seek(0)
-        fig2_bytes = bytes_io2.getvalue()
+            plt.close(fig2)
 
-        plt.close(fig2)
-
-        return fig1_bytes, fig2_bytes
-    else:
-        print("Нет данных для построения графика.")
-        return None, None
+            return fig1_bytes, fig2_bytes
+        else:
+            print("Нет данных для построения графика.")
+            return None, None
+    except Exception as ex:
+        return ex
 
 
 if __name__ == "__main__":
     # получить список курсов по всем валютам и по всем диапазонам (основная функция (main)) - не нужно её принтить
     full_currencies = get_currencies_mir()
-    # получить список доступных валют и дат
+    # получить список доступных валют и дат (справка)
     all_valutes = get_valutes_mir(main=full_currencies)
+    # print(all_valutes)
     # all_valutes = get_valutes_mir()
     # получить по конкретной валюте за сегодня
     today_course = get_course_today_mir(main=full_currencies, valute="казахстанский тенге")
-    print(today_course)
+    # print(today_course)
     # получить по конкретной валюте за определённую дату
     course = get_course_on_date_mir(main=full_currencies, valute="казахстанский тенге", date="20.06.2023")
     # print(course)
 
     # получить график за указанный диапазон (2 графика в PNG, сохранённом в байтовом представлении - рубль к валюте и валюта к рублю)
-    # charts = draw_currency_chart_mir(main=full_currencies, valute="Казахстанский тенге", start_date="01.01.2022", end_date="05.07.2023")
-    # print(charts[0])
-    # print(charts[1])
+    charts = draw_currency_chart_mir(main=full_currencies, valute="Казахстанский тенге", start_date="01.01.2022", end_date="05.07.2023")
+    print(charts[0])
+    print(charts[1])
 
 
     # калькулятор валюты - пишешь сумму - пишет сколько это число в валюте и в рублях

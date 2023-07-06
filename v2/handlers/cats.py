@@ -20,6 +20,7 @@ async def cb_cat(callback: types.CallbackQuery, callback_data: dict, state: FSMC
             await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
             # await callback.message.delete()
             await bot.send_photo(chat_id=callback.message.chat.id, photo=InputFile.from_url(get_cat_photo()), reply_markup=cat_ikb())
+        # так бывает, если нажать на запрос котика у старого сообщения, которое уже недоступно для редактирования
         except MessageCantBeDeleted:
             await bot.send_message(chat_id=callback.message.chat.id, text="Попробуйте снова", reply_markup=main_ikb())
 
