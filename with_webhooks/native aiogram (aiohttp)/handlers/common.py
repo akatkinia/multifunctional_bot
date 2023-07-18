@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from create_bot import dp
@@ -11,10 +13,11 @@ from aiogram.dispatcher.filters import Command
 # @dp.message_handler(commands=['start', 'cancel'], state='*')
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
-    print(f'{message}\n---')
+    # print(f'{message}\n---')
     await message.answer(text=f"Добро пожаловать, {message.from_user.full_name}!",
                          reply_markup=main_ikb())
     await message.delete()
+    logging.info(f"Received message from user {message.from_user.id} (@{message.from_user.username}): {message.text}")
 
 # Обработка callback 'cancel' для всех состояний
 # @dp.callback_query_handler(cb.filter(command='cancel'), state='*')
@@ -49,6 +52,15 @@ async def cb_mir_currency(callback: types.CallbackQuery, callback_data: dict, st
         # await ProfileStatesGroup.currency_mir_state.set()
         await callback.message.edit_text(f"Выберите способ отображения данных.\nЕсли требуется информация о доступных на сегодняшний день валютах и диапазонах дат, вызовите справку ⬇️", parse_mode="HTML", reply_markup=mir_currency_ikb())
 
+# логирование любых сообщений пользователя
+# @dp.message_handler()
+async def log_user_message(message: types.Message):
+    # Логируем каждое сообщение пользователя
+    user_id = message.from_user.id
+    username = message.from_user.username
+    text = message.text
+    logging.info(f"Received message from user {user_id} (@{username}): {text}")
+
 
 # команды для регистрации handlers для бота - они передаются в основной файл bot.py
 def register_handlers_common(dp: dp):
@@ -57,3 +69,6 @@ def register_handlers_common(dp: dp):
     dp.register_callback_query_handler(cb_currency, cb.filter(command='currency'), state='*')
     dp.register_callback_query_handler(cb_currency_cbrf, cb.filter(command='cb_currency_cbrf'), state='*')
     dp.register_callback_query_handler(cb_mir_currency, cb.filter(command='cb_currency_mir'), state='*')
+
+    dp.register_message_handler(log_user_message)
+

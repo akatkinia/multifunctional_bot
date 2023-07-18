@@ -8,8 +8,10 @@ import ssl
 
 if __name__ == '__main__':
     # Generate SSL context
-    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+   # context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2) # deprecated
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.load_cert_chain(WEBHOOK_SSL_CERT, WEBHOOK_SSL_PRIV)
+
 
     weather.register_handlers_weather(dp)
     common.register_handlers_common(dp)
