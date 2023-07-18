@@ -1,5 +1,3 @@
-import logging
-
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from create_bot import dp
@@ -7,8 +5,7 @@ from keyboards.common import cb, main_ikb, choose_currency
 from keyboards.currency_cb import currency_ikb
 from keyboards.currency_mir import mir_currency_ikb
 from states.common import ProfileStatesGroup
-from aiogram.dispatcher.filters import Command
-from aiogram.dispatcher.middlewares import BaseMiddleware
+# from aiogram.dispatcher.filters import Command
 
 # Обработка команд 'start' и cancel
 # @dp.message_handler(commands=['start', 'cancel'], state='*')
@@ -52,23 +49,6 @@ async def cb_mir_currency(callback: types.CallbackQuery, callback_data: dict, st
         # await ProfileStatesGroup.currency_mir_state.set()
         await callback.message.edit_text(f"Выберите способ отображения данных.\nЕсли требуется информация о доступных на сегодняшний день валютах и диапазонах дат, вызовите справку ⬇️", parse_mode="HTML", reply_markup=mir_currency_ikb())
 
-# логирование любых сообщений пользователя
-# @dp.message_handler()
-#async def log_user_message(message: types.Message):
-#    user_id = message.from_user.id
-#    username = message.from_user.username
-#    text = message.text
-#    logging.info(f"Received message from user {user_id} (@{username}): {text}")
-
-class LoggingMiddleware(BaseMiddleware):
-    async def on_pre_process_message(self, message: types.Message, data: dict):
-        user_id = message.from_user.id
-        username = message.from_user.username
-        text = message.text
-        logging.info(f"Received message from user {user_id} (@{username}): {text}")
-
-
-
 # команды для регистрации handlers для бота - они передаются в основной файл bot.py
 def register_handlers_common(dp: dp):
     dp.register_message_handler(cmd_start, commands=['start', 'cancel'], state='*')
@@ -76,7 +56,3 @@ def register_handlers_common(dp: dp):
     dp.register_callback_query_handler(cb_currency, cb.filter(command='currency'), state='*')
     dp.register_callback_query_handler(cb_currency_cbrf, cb.filter(command='cb_currency_cbrf'), state='*')
     dp.register_callback_query_handler(cb_mir_currency, cb.filter(command='cb_currency_mir'), state='*')
-
-# добавляем обработчик как middleware перед другими обработчиками
-   # dp.middleware.setup(log_user_message)
-    dp.middleware.setup(LoggingMiddleware())
