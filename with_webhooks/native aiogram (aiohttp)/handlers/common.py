@@ -18,7 +18,6 @@ async def cmd_start(message: types.Message, state: FSMContext):
     await message.answer(text=f"Добро пожаловать, {message.from_user.full_name}!",
                          reply_markup=main_ikb())
     await message.delete()
-    logging.info(f"Received message from user {message.from_user.id} (@{message.from_user.username}): {message.text}")
 
 # Обработка callback 'cancel' для всех состояний
 # @dp.callback_query_handler(cb.filter(command='cancel'), state='*')
