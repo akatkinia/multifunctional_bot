@@ -13,7 +13,6 @@ if __name__ == '__main__':
     cats.register_handlers_cats(dp)
 
 #    uvicorn.run(app, host='0.0.0.0', port=WEBAPP_PORT, ssl_keyfile='cert/key.pem', ssl_certfile='cert/cert.pem')
-    uvicorn.run(app, host='0.0.0.0', port=WEBAPP_PORT, ssl_keyfile='/etc/letsencrypt/live/80-78-244-196.cloudvps.regruhosting.ru/privkey.pem', ssl_certfile='/etc/letsencrypt/live/80-78-244-196.cloudvps.regruhosting.ru/fullchain.pem')
+    uvicorn.run(app, host='0.0.0.0', port=WEBAPP_PORT, ssl_keyfile='/etc/letsencrypt/live/<DNS_OF_YOUR_HOST>/privkey.pem', ssl_certfile='/etc/letsencrypt/live/<DNS_OF_YOUR_HOST>/fullchain.pem')
 
 #    uvicorn.run(app, host='0.0.0.0', port=WEBAPP_PORT)
-
