@@ -8,6 +8,7 @@ from keyboards.currency_cb import currency_ikb
 from keyboards.currency_mir import mir_currency_ikb
 from states.common import ProfileStatesGroup
 from aiogram.dispatcher.filters import Command
+from aiogram.dispatcher.middlewares import BaseMiddleware
 
 # Обработка команд 'start' и cancel
 # @dp.message_handler(commands=['start', 'cancel'], state='*')
@@ -54,12 +55,19 @@ async def cb_mir_currency(callback: types.CallbackQuery, callback_data: dict, st
 
 # логирование любых сообщений пользователя
 # @dp.message_handler()
-async def log_user_message(message: types.Message):
-    # Логируем каждое сообщение пользователя
-    user_id = message.from_user.id
-    username = message.from_user.username
-    text = message.text
-    logging.info(f"Received message from user {user_id} (@{username}): {text}")
+#async def log_user_message(message: types.Message):
+#    user_id = message.from_user.id
+#    username = message.from_user.username
+#    text = message.text
+#    logging.info(f"Received message from user {user_id} (@{username}): {text}")
+
+class LoggingMiddleware(BaseMiddleware):
+    async def on_pre_process_message(self, message: types.Message, data: dict):
+        user_id = message.from_user.id
+        username = message.from_user.username
+        text = message.text
+        logging.info(f"Received message from user {user_id} (@{username}): {text}")
+
 
 
 # команды для регистрации handlers для бота - они передаются в основной файл bot.py
@@ -70,5 +78,6 @@ def register_handlers_common(dp: dp):
     dp.register_callback_query_handler(cb_currency_cbrf, cb.filter(command='cb_currency_cbrf'), state='*')
     dp.register_callback_query_handler(cb_mir_currency, cb.filter(command='cb_currency_mir'), state='*')
 
-    dp.register_message_handler(log_user_message)
-
+# добавляем обработчик как middleware перед другими обработчиками
+   # dp.middleware.setup(log_user_message)
+    dp.middleware.setup(LoggingMiddleware())
