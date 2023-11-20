@@ -1,16 +1,16 @@
+import urllib.request
+import ssl
+import pdfplumber
+import matplotlib.pyplot as plt
 from datetime import datetime
 import io
-import ssl
 import requests
-import urllib.request
-
 from bs4 import BeautifulSoup as bs
 import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
-import pdfplumber
+from aiogram.utils.exceptions import MessageTextIsEmpty
 
-
-URL = "https://mironline.ru/upload/currency%20rate/FX_rate_Mir.pdf"
+# URL = "https://mironline.ru/upload/currency%20rate/FX_rate_Mir.pdf"
+URL = "https://privetmir.ru/upload/FX_rate_Mir/FX_rate_Mir.pdf"
 FILE_PATH = "MIR.pdf"
 COMBINED_TABLE = []
 
@@ -24,6 +24,22 @@ def get_currencies_mir():
     # Отправляем запрос и скачиваем файл в память
     response = opener.open(req)
     file_bytes = response.read()
+
+    # Создаем объект файла из байтов
+    pdf_file_obj = io.BytesIO(file_bytes)
+
+    # Объединяем таблицы со всех страниц в одну таблицу
+    target_table_index = 1  # Индекс искомой таблицы
+    combined_table = []
+
+    with pdfplumber.open(pdf_file_obj) as pdf:
+        for page_number, page in enumerate(pdf.pages, start=1):
+            tables = page.extract_tables()
+            
+            if len(tables) > target_table_index:
+                # Выбираем нужную таблицу
+                target_table = tables[target_table_index]
+                combined_table.extend(target_table)
 
     # Создаем объект файла из байтов
     pdf_file_obj = io.BytesIO(file_bytes)
@@ -58,20 +74,24 @@ def get_currencies_mir():
                 "Time": time
             }
             formatted_data.append(data)
+        # print(f"Данные успешно обработаны\n**********")
+
     return formatted_data
 
-
+# def get_valutes_mir(main):
 def get_valutes_mir(main):
     url = "https://mironline.ru/support/list/kursy_mir/"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0"
     }
+
     soup = bs(requests.get(url=url, headers=headers).content, "lxml")
     valutes = []
 
     rows = soup.find("table").find_all("tr")
     print(rows)
     for row in rows:
+        # valute_elem = row.find("p", style="text-align: left;")
         valute_elem = row.find("p")
         if valute_elem and valute_elem.text.strip() != "Валюта":  # Проверяем наличие элемента и что текст не является пустой строкой и не "Валюта"
             valute = valute_elem.text.strip()
@@ -82,6 +102,7 @@ def get_valutes_mir(main):
     first_date = main[0]["Date"]
     last_date = main[-1]["Date"]
 
+    # result = f"<b>Доступные валюты:</b>\n{valutes_text}"
     result = f"<b>Доступные валюты:</b>\n{valutes_text}\n\n<b>Диапазон дат, за которые имеются данные:</b>\n{last_date} - {first_date}"
 
     return result
@@ -159,6 +180,7 @@ def draw_currency_chart_mir(main, valute, start_date, end_date):
             plt.xlabel("Дата")
             plt.ylabel(valute)
             plt.title(f"Курс рубля к {valute}")
+            # plt.xticks(rotation=45, ticks=dates)
             plt.xticks(rotation=45)
             plt.grid(True)
 
@@ -170,6 +192,11 @@ def draw_currency_chart_mir(main, valute, start_date, end_date):
                 value = round(rates_rub[i], 4)
                 ax1.annotate(str(value), xy=(dates[i], rates_rub[i]), xytext=(0, 5), textcoords='offset points')
 
+            # plt.show()
+
+            # Подстройка отступов для избежания обрезания
+            # plt.subplots_adjust(bottom=0.2)  # можно изменить значение, если требуется больше отступа
+            
             # Настройка отступов и расположения элементов
             plt.tight_layout()
 
@@ -195,6 +222,11 @@ def draw_currency_chart_mir(main, valute, start_date, end_date):
                 value = round(rates[i], 4)
                 ax2.annotate(str(value), xy=(dates[i], rates[i]), xytext=(0, 5), textcoords='offset points')
 
+            # plt.show()
+
+            # Подстройка отступов для избежания обрезания
+            # plt.subplots_adjust(bottom=0.2)  # можно изменить если требуется больше отступа
+
             # Настройка отступов и расположения элементов
             plt.tight_layout()
 
@@ -207,23 +239,31 @@ def draw_currency_chart_mir(main, valute, start_date, end_date):
 
             return fig1_bytes, fig2_bytes
         else:
+            print("Нет данных для построения графика.")
             return None, None
     except Exception as ex:
         return ex
 
 
-# if __name__ == "__main__":
-    # # Получить список курсов по всем валютам и по всем диапазонам (основная функция)
-    # full_currencies = get_currencies_mir()
-    
-    # # Справка - Получить список доступных валют и дат
-    # all_valutes = get_valutes_mir(main=full_currencies)
-    
-    # # Получить курс по конкретной валюте за сегодня
-    # today_course = get_course_today_mir(main=full_currencies, valute="казахстанский тенге")
+if __name__ == "__main__":
+    # получить список курсов по всем валютам и по всем диапазонам (основная функция (main)) - не нужно её принтить
+    full_currencies = get_currencies_mir()
+    # получить список доступных валют и дат (справка)
+    all_valutes = get_valutes_mir(main=full_currencies)
+    # print(all_valutes)
+    # all_valutes = get_valutes_mir()
+    # получить по конкретной валюте за сегодня
+    today_course = get_course_today_mir(main=full_currencies, valute="казахстанский тенге")
+    # print(today_course)
+    # получить по конкретной валюте за определённую дату
+    course = get_course_on_date_mir(main=full_currencies, valute="казахстанский тенге", date="20.06.2023")
+    # print(course)
 
-    # # Получить курс по конкретной валюте за определённую дату
-    # course = get_course_on_date_mir(main=full_currencies, valute="казахстанский тенге", date="20.06.2023")
+    # получить график за указанный диапазон (2 графика в PNG, сохранённом в байтовом представлении - рубль к валюте и валюта к рублю)
+    charts = draw_currency_chart_mir(main=full_currencies, valute="Казахстанский тенге", start_date="01.01.2022", end_date="05.07.2023")
+    print(charts[0])
+    print(charts[1])
 
-    # # Получить график за указанный диапазон (2 графика в PNG, сохранённом в байтовом представлении - рубль к валюте и валюта к рублю)
-    # charts = draw_currency_chart_mir(main=full_currencies, valute="Казахстанский тенге", start_date="01.01.2022", end_date="05.07.2023")
+
+    # калькулятор валюты - пишешь сумму - пишет сколько это число в валюте и в рублях
+    # создать задачу на оповещение, если курс станет выше/ниже заданного порогового значения по выбранной валюте
