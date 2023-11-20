@@ -10,9 +10,10 @@ import matplotlib.pyplot as plt
 import pdfplumber
 
 
-URL = "https://mironline.ru/upload/currency%20rate/FX_rate_Mir.pdf"
-FILE_PATH = "MIR.pdf"
-COMBINED_TABLE = []
+# URL = "https://mironline.ru/upload/currency%20rate/FX_rate_Mir.pdf"
+# FILE_PATH = "MIR.pdf"
+# COMBINED_TABLE = []
+URL = "https://privetmir.ru/upload/FX_rate_Mir/FX_rate_Mir.pdf"
 
 
 def get_currencies_mir():
