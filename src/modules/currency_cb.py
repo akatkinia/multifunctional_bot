@@ -1,13 +1,18 @@
 from datetime import datetime
 import requests
 
-
 URL = 'https://www.cbr-xml-daily.ru/daily_json.js'
-R = requests.get(URL)
-if R.status_code == 200:
-    DATA = R.json()
-else:
-    raise Exception("Ошибка получения данных")
+DATA = None  # TODO: should be refactored to avoid use globals
+
+
+def cb_init():
+    global DATA
+    r = requests.get(URL)
+    if r.status_code == 200:
+        DATA = r.json()
+    else:
+        raise Exception("Ошибка получения данных")
+
 
 # Построчно получить пары кода и названия валют
 def get_valutes(data=DATA):

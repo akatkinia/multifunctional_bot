@@ -5,8 +5,12 @@ from aiogram.utils.executor import start_webhook
 from config import WEBHOOK_SSL_CERT, WEBHOOK_SSL_PRIV
 import ssl
 
+from modules.currency_cb import cb_init
+
 
 if __name__ == '__main__':
+    cb_init()
+
     dp = bot_create()
     weather.register_handlers_weather(dp)
     common.register_handlers_common(dp)
