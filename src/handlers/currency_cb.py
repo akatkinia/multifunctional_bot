@@ -1,7 +1,6 @@
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
-from create_bot import dp
 from keyboards.currency_cb import currency_ikb
 from keyboards.common import cb, cancel_ikb
 from modules.currency_cb import get_valutes, get_course
@@ -18,7 +17,6 @@ async def currency(message: types.Message):
 
 
 # РЕГИСТРАЦИЯ ОБРАБОТЧИКОВ
-def register_handlers_currency_cb(dp: dp):
+def register_handlers_currency_cb(dp):
     dp.register_callback_query_handler(cb_currency_help, cb.filter(command='currency_help'), state=ProfileStatesGroup.currency)
     dp.register_message_handler(currency, state=ProfileStatesGroup.currency)
-    

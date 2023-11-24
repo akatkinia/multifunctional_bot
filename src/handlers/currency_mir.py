@@ -1,6 +1,6 @@
 from aiogram import types
 from aiogram.dispatcher import FSMContext
-from create_bot import dp
+
 from keyboards.common import cb
 from keyboards.currency_mir import mir_currency_ikb
 from modules.currency_mir import get_valutes_mir, get_currencies_mir, get_course_today_mir, get_course_on_date_mir, draw_currency_chart_mir
@@ -116,18 +116,18 @@ async def chart_mir(message: types.Message):
 
 
 # РЕГИСТРАЦИЯ ОБРАБОТЧИКОВ
-def register_handlers_currency_mir(dp: dp):
+def register_handlers_currency_mir(dp):
     # Справка
     dp.register_callback_query_handler(currency_help_mir, cb.filter(command='cb_currency_help_mir'), state='*')
 
     # Курс за сегодня
     dp.register_callback_query_handler(cb_today_currency_mir, cb.filter(command='cb_today_currency_mir'), state='*')
     dp.register_message_handler(today_currency_mir, state=ProfileStatesGroup.currency_mir_today_state)
-    
+
     # Курс за конкретную дату
     dp.register_callback_query_handler(cb_currentdate_currency_mir, cb.filter(command='cb_currentdate_currency_mir'), state='*')
     dp.register_message_handler(currentdate_currency_mir, state=ProfileStatesGroup.currency_mir_currentdate_state)
-    
+
     # График за диапазон
     dp.register_callback_query_handler(cb_chart_mir, cb.filter(command='cb_chart_mir'), state='*')
     dp.register_message_handler(chart_mir, state=ProfileStatesGroup.currency_mir_chart_state)

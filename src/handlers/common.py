@@ -1,7 +1,6 @@
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
-from create_bot import dp
 from keyboards.common import cb, choose_currency, main_ikb
 from keyboards.currency_cb import currency_ikb
 from keyboards.currency_mir import mir_currency_ikb
@@ -43,7 +42,7 @@ async def cb_mir_currency(callback: types.CallbackQuery, callback_data: dict, st
 
 
 # РЕГИСТРАЦИЯ ОБРАБОТЧИКОВ
-def register_handlers_common(dp: dp):
+def register_handlers_common(dp):
     dp.register_message_handler(cmd_start, commands=['start', 'cancel'], state='*')
     dp.register_callback_query_handler(cb_cancel, cb.filter(command='cancel'), state='*')
     dp.register_callback_query_handler(cb_currency, cb.filter(command='currency'), state='*')

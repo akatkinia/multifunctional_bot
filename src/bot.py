@@ -1,4 +1,4 @@
-from create_bot import dp, on_startup, on_shutdown
+from create_bot import bot_create, on_shutdown, on_startup
 from handlers import common, cats, currency_cb, currency_mir, weather
 from config import WEBAPP_PORT, WEBAPP_HOST, WEBHOOK_PATH
 from aiogram.utils.executor import start_webhook
@@ -7,6 +7,7 @@ import ssl
 
 
 if __name__ == '__main__':
+    dp = bot_create()
     weather.register_handlers_weather(dp)
     common.register_handlers_common(dp)
     currency_cb.register_handlers_currency_cb(dp)
