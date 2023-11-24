@@ -3,7 +3,6 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import InputFile
 from aiogram.utils.exceptions import MessageCantBeDeleted
 
-from create_bot import dp, bot
 from keyboards.common import cb, main_ikb
 from keyboards.cats import cat_ikb
 from modules.cats import get_cat_photo
@@ -29,7 +28,7 @@ async def cb_cat(callback: types.CallbackQuery, callback_data: dict, state: FSMC
         await callback.message.edit_media(types.InputMedia(media=InputFile.from_url(get_cat_photo()),
                                                            type='photo'),
                                                            reply_markup=cat_ikb())
-        
 
-def register_handlers_cats(dp: dp):
+
+def register_handlers_cats(dp):
     dp.register_callback_query_handler(cb_cat, cb.filter(), state='*')

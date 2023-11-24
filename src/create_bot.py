@@ -11,14 +11,6 @@ from config import ADMIN_ID, DB_PATH, TOKEN_API, WEBHOOK_URL
 from db import create_table
 
 
-storage = MemoryStorage()
-
-bot = Bot(token=TOKEN_API)
-dp = Dispatcher(bot=bot, storage=storage)
-
-logging.basicConfig(filename='./persistant_data/app.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%d-%m-%Y %H:%M:%S', encoding='utf-8')
-dp.middleware.setup(LoggingMiddleware())
-
 class LoggingMiddleware(BaseMiddleware):
     # Middleware для захвата сообщений пользователя перед другими обработчиками message_handler - запись в БД и лог-файл
     async def on_pre_process_message(self, message: types.Message, data: dict):
@@ -61,23 +53,35 @@ class LoggingMiddleware(BaseMiddleware):
         logging.info(f"Received callback query from user {user_id} (@{username}): {data}")    
 
 
+def bot_create():
+    storage = MemoryStorage()
+
+    bot = Bot(token=TOKEN_API)
+    dp = Dispatcher(bot=bot, storage=storage)
+
+    logging.basicConfig(filename='./persistant_data/app.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%d-%m-%Y %H:%M:%S', encoding='utf-8')
+    dp.middleware.setup(LoggingMiddleware())
+    return dp
+
+
 async def on_startup(dp):
-    await bot.set_webhook(WEBHOOK_URL)
+    await dp.bot.set_webhook(WEBHOOK_URL)
     # Создание таблицы
     create_table()
     # создание постоянного соединения с БД при запуске бота
     global conn
     conn = sqlite3.connect(DB_PATH)
-    await bot.send_message(chat_id=ADMIN_ID, text=f'Mixer bot is online')
+    await dp.bot.send_message(chat_id=ADMIN_ID, text=f'Mixer bot is online')
+
 
 async def on_shutdown(dp):
     logging.warning('Shutting down...')
-    await bot.delete_webhook()
+    await dp.bot.delete_webhook()
     await dp.storage.close()
     await dp.storage.wait_closed()
-    session = await bot.get_session()
+    session = await dp.bot.get_session()
     await session.close()
     # закрытия соединения с БД при завершении работы бота
     conn.close()
-    await bot.send_message(chat_id=ADMIN_ID, text=f'Mixer bot is offline')
+    await dp.bot.send_message(chat_id=ADMIN_ID, text=f'Mixer bot is offline')
     logging.warning('Bye!')

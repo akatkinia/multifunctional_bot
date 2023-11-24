@@ -3,7 +3,6 @@ from aiogram.dispatcher import FSMContext
 from aiogram.utils.exceptions import MessageIsTooLong
 
 from config import OPEN_WEATHER_TOKEN
-from create_bot import dp
 from keyboards.common import cb, cancel_ikb, main_ikb
 from keyboards.weather import weather_ikb
 from modules.weather import get_weather, get_forecast_weather
@@ -14,6 +13,7 @@ from states.common import ProfileStatesGroup
 async def cb_weather(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     await ProfileStatesGroup.weather.set()
     await callback.message.edit_text("Выберите необходимый период", reply_markup=weather_ikb())
+
 
 # Текущая погода и 3-х часовые интервалы
 async def cb_current_weather(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
@@ -29,9 +29,11 @@ async def cb_current_weather(callback: types.CallbackQuery, callback_data: dict,
         await state.finish()
         await callback.message.edit_text(text=hello_text, reply_markup=main_ikb())
 
+
 # Вызов модуля текущей погоды
 async def current_weather(message: types.Message):
     await message.answer(text=get_weather(message.text, OPEN_WEATHER_TOKEN), reply_markup=cancel_ikb(), parse_mode='html')
+
 
 # Вызов модуля прогноза погоды
 async def forecast_weather(message: types.Message):
@@ -59,7 +61,7 @@ async def forecast_weather(message: types.Message):
 
 
 # РЕГИСТРАЦИЯ ОБРАБОТЧИКОВ
-def register_handlers_weather(dp: dp):
+def register_handlers_weather(dp):
     dp.register_callback_query_handler(cb_weather, cb.filter(command='weather'))
     dp.register_callback_query_handler(cb_current_weather, cb.filter(), state=ProfileStatesGroup.weather)
     dp.register_message_handler(current_weather, state=ProfileStatesGroup.current_weather)
